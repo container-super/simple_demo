@@ -1,0 +1,371 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>LED开关控制</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            max-width: 500px;
+            margin: 0 auto;
+            padding: 20px;
+            background-color: #f5f5f5;
+        }
+        .container {
+            background: white;
+            padding: 20px;
+            border-radius: 10px;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+        }
+        h1 {
+            color: #333;
+            text-align: center;
+        }
+        .switch-container {
+            display: flex;
+            align-items: center;
+            margin: 20px 0;
+            padding: 15px;
+            background: #f9f9f9;
+            border-radius: 8px;
+        }
+        .led-label {
+            flex: 1;
+            font-size: 18px;
+            font-weight: bold;
+        }
+        .switch {
+            position: relative;
+            display: inline-block;
+            width: 60px;
+            height: 34px;
+        }
+        .switch input {
+            opacity: 0;
+            width: 0;
+            height: 0;
+        }
+        .slider {
+            position: absolute;
+            cursor: pointer;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background-color: #ccc;
+            transition: .4s;
+            border-radius: 34px;
+        }
+        .slider:before {
+            position: absolute;
+            content: "";
+            height: 26px;
+            width: 26px;
+            left: 4px;
+            bottom: 4px;
+            background-color: white;
+            transition: .4s;
+            border-radius: 50%;
+        }
+        input:checked + .slider {
+            background-color: #2196F3;
+        }
+        input:checked + .slider:before {
+            transform: translateX(26px);
+        }
+        .status {
+            margin-top: 10px;
+            padding: 10px;
+            background: #e8f4fd;
+            border-radius: 5px;
+            font-family: monospace;
+        }
+        .com-config {
+            margin: 20px 0;
+            padding: 15px;
+            background: #f0f8ff;
+            border-radius: 8px;
+        }
+        button {
+            padding: 10px 15px;
+            margin: 5px;
+            color: white;
+            border: none;
+            border-radius: 4px;
+            cursor: pointer;
+            font-size: 16px;
+        }
+        .connect-btn {
+            background: #4CAF50;
+        }
+        .connect-btn:hover {
+            background: #45a049;
+        }
+        .disconnect-btn {
+            background: #f44336;
+        }
+        .disconnect-btn:hover {
+            background: #da190b;
+        }
+        #connectionStatus {
+            padding: 10px;
+            margin-top: 20px;
+            border-radius: 5px;
+            text-align: center;
+            font-weight: bold;
+        }
+        .connected {
+            background: #dff0d8;
+            color: #3c763d;
+        }
+        .disconnected {
+            background: #f2dede;
+            color: #a94442;
+        }
+        select {
+            padding: 8px;
+            margin: 5px;
+            border: 1px solid #ddd;
+            border-radius: 4px;
+        }
+        .com-input {
+            display: flex;
+            align-items: center;
+            margin: 10px 0;
+        }
+        .com-input label {
+            width: 80px;
+        }
+        .instructions {
+            background: #fff3cd;
+            padding: 10px;
+            border-radius: 5px;
+            margin: 10px 0;
+            font-size: 14px;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>LED开关控制</h1>
+        
+        <div class="instructions">
+            <strong>使用说明：</strong><br>
+            1. 选择串口号（如COM3、COM4等）<br>
+            2. 选择波特率（通常为9600）<br>
+            3. 点击"连接串口"<br>
+            4. 在弹出的设备列表中选择你的串口设备
+        </div>
+        
+        <div class="com-config">
+            <div class="com-input">
+                <label>串口号:</label>
+                <select id="comSelect">
+                    <option value="COM1">COM1</option>
+                    <option value="COM2">COM2</option>
+                    <option value="COM3" selected>COM3</option>
+                    <option value="COM4">COM4</option>
+                    <option value="COM5">COM5</option>
+                    <option value="COM6">COM6</option>
+                    <option value="COM7">COM7</option>
+                    <option value="COM8">COM8</option>
+                    <option value="COM9">COM9</option>
+                    <option value="COM10">COM10</option>
+                </select>
+            </div>
+            
+            <div class="com-input">
+                <label>波特率:</label>
+                <select id="baudRateSelect">
+                    <option value="9600" selected>9600</option>
+                    <option value="19200">19200</option>
+                    <option value="38400">38400</option>
+                    <option value="57600">57600</option>
+                    <option value="115200">115200</option>
+                </select>
+            </div>
+            
+            <div>
+                <button class="connect-btn" onclick="connectSerial()">连接串口</button>
+                <button class="disconnect-btn" onclick="disconnectSerial()">断开连接</button>
+            </div>
+            
+            <div id="connectionStatus" class="disconnected">未连接</div>
+        </div>
+
+        <div class="switch-container">
+            <div class="led-label">红色LED</div>
+            <label class="switch">
+                <input type="checkbox" id="redLedSwitch" onchange="toggleLED('R', this.checked)">
+                <span class="slider"></span>
+            </label>
+        </div>
+
+        <div class="switch-container">
+            <div class="led-label">绿色LED</div>
+            <label class="switch">
+                <input type="checkbox" id="greenLedSwitch" onchange="toggleLED('G', this.checked)">
+                <span class="slider"></span>
+            </label>
+        </div>
+
+        <div class="status">
+            <div>最后发送的命令: <span id="lastCommand">无</span></div>
+            <div>串口状态: <span id="serialStatus">未连接</span></div>
+            <div>当前波特率: <span id="currentBaudRate">未设置</span></div>
+            <div>连接设备: <span id="deviceInfo">无</span></div>
+        </div>
+    </div>
+
+    <script>
+        let serialPort = null;
+        let writer = null;
+        let isConnected = false;
+        let currentBaudRate = 9600;
+        let connectedPortName = '';
+
+        // 连接串口
+        async function connectSerial() {
+            try {
+                // 先断开已有连接
+                if (isConnected) {
+                    await disconnectSerial();
+                }
+                
+                currentBaudRate = parseInt(document.getElementById('baudRateSelect').value);
+                
+                console.log('正在请求串口权限...');
+                
+                // 请求串口权限 - 让用户选择设备
+                serialPort = await navigator.serial.requestPort();
+                
+                if (!serialPort) {
+                    throw new Error('用户取消了设备选择');
+                }
+                
+                // 获取设备信息
+                connectedPortName = serialPort.getInfo().usbProductId ? 
+                    `USB设备 (PID: ${serialPort.getInfo().usbProductId})` : 
+                    document.getElementById('comSelect').value;
+                
+                console.log('打开串口...', serialPort);
+                
+                // 配置串口参数
+                await serialPort.open({
+                    baudRate: currentBaudRate,
+                    dataBits: 8,
+                    stopBits: 1,
+                    parity: 'none',
+                    flowControl: 'none'
+                });
+
+                // 获取写入器
+                writer = serialPort.writable.getWriter();
+                isConnected = true;
+                
+                // 更新界面状态
+                updateConnectionStatus(true);
+                
+                console.log('串口连接成功');
+                
+            } catch (error) {
+                console.error('串口连接失败:', error);
+                if (error.name === 'NotFoundError') {
+                    alert('未找到可用的串口设备，请检查设备连接');
+                } else if (error.name === 'SecurityError') {
+                    alert('浏览器安全限制，请确保在安全上下文（HTTPS或localhost）中运行');
+                } else {
+                    alert('连接失败: ' + error.message);
+                }
+                updateConnectionStatus(false);
+            }
+        }
+
+        // 断开串口
+        async function disconnectSerial() {
+            try {
+                if (writer) {
+                    await writer.releaseLock();
+                    writer = null;
+                }
+                if (serialPort) {
+                    await serialPort.close();
+                    serialPort = null;
+                }
+            } catch (error) {
+                console.error('断开连接时出错:', error);
+            } finally {
+                isConnected = false;
+                updateConnectionStatus(false);
+                console.log('串口已断开');
+            }
+        }
+
+        // 更新连接状态显示
+        function updateConnectionStatus(connected) {
+            const statusElement = document.getElementById('connectionStatus');
+            const serialStatusElement = document.getElementById('serialStatus');
+            const baudRateElement = document.getElementById('currentBaudRate');
+            const deviceInfoElement = document.getElementById('deviceInfo');
+            
+            if (connected) {
+                statusElement.textContent = `已连接: ${connectedPortName} @ ${currentBaudRate}bps`;
+                statusElement.className = 'connected';
+                serialStatusElement.textContent = '已连接';
+                baudRateElement.textContent = `${currentBaudRate}bps`;
+                deviceInfoElement.textContent = connectedPortName;
+            } else {
+                statusElement.textContent = '未连接';
+                statusElement.className = 'disconnected';
+                serialStatusElement.textContent = '未连接';
+                baudRateElement.textContent = '未设置';
+                deviceInfoElement.textContent = '无';
+                connectedPortName = '';
+            }
+        }
+
+        // 切换LED状态
+        async function toggleLED(color, state) {
+            if (!isConnected || !writer) {
+                alert('请先连接串口！');
+                // 恢复开关状态
+                resetSwitchState(color, state);
+                return;
+            }
+
+            const command = `${color}${state ? '1' : '0'}\n`;  // 确保末尾有换行符
+            
+            try {
+                const encoder = new TextEncoder();
+                const data = encoder.encode(command);
+                await writer.write(data);
+                
+                document.getElementById('lastCommand').textContent = command.trim();
+                console.log('发送命令: ' + command.trim());
+                
+            } catch (error) {
+                console.error('发送失败:', error);
+                alert('发送失败: ' + error.message);
+                
+                // 恢复开关状态
+                resetSwitchState(color, state);
+            }
+        }
+
+        // 恢复开关状态
+        function resetSwitchState(color, state) {
+            if (color === 'R') {
+                document.getElementById('redLedSwitch').checked = !state;
+            } else {
+                document.getElementById('greenLedSwitch').checked = !state;
+            }
+        }
+
+        // 页面卸载时断开连接
+        window.addEventListener('beforeunload', () => {
+            if (isConnected) {
+                disconnectSerial();
+            }
+        });
+    </script>
+</body>
+</html>
